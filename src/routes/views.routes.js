@@ -53,7 +53,8 @@ router.get("/admin", async (req, res) => {
     const user = await usersModel.findOne({ email: userEmail });
     console.log(user);
     if (user.rol === 'administrador') {
-        res.render("admin");
+        const rol = user.rol;
+        res.render("admin", { rol });
     } else {
         res.status(403).send('Acceso prohibido: No eres administrador');
     }
