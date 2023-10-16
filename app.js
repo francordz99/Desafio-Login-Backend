@@ -1,4 +1,6 @@
 const express = require('express');
+const session = require('express-session');
+const FileStore = require('session-file-store');
 const { engine } = require('express-handlebars');
 const ProductManager = require('./dao/filesystem/ProductManager.js');
 const bodyParser = require('body-parser');
@@ -12,6 +14,9 @@ const MessageManager = require('./dao/mongodb/messageManager.js');
 const { CartManager } = require('./dao/mongodb/cartManager.js');
 const ProductModel = require('./dao/models/productModel.js');
 const messageManager = new MessageManager();
+const MongoStore = require('connect-mongo');
+const { viewsRouter } = require('./src/routes/views.routes.js');
+const { sessionsRouter } = require('./src/routes/sessions.routes.js');
 
 const app = express();
 const port = 8080;
@@ -24,6 +29,7 @@ const productRoutes = require('./src/routes/products.routes');
 const cartsRoutes = require('./src/routes/carts.routes.js');
 const messageRoutes = require('./src/routes/messages.routes');
 
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public'));
 app.use('/api/carts', cartRouter);
@@ -38,6 +44,21 @@ app.set('views', './views');
 // MongoDB
 
 connectDB();
+
+// Conexion Session / MongoStore
+
+const fileStorage = FileStore(session);
+
+app.use(session({
+    store: MongoStore.create({
+        ttl: 60,
+        mongoUrl: "mongodb+srv://testrdz32:z0n3T7msJnV2nKLA@clusterbackend.unryogc.mongodb.net/ecommerce?retryWrites=true&w=majority",
+        retries: 0,
+    }),
+    secret: "claveSecretaSesion",
+    resave: true,
+    saveUninitialized: true
+}));
 
 // Socket IO
 
@@ -84,6 +105,9 @@ app.get('/', async (req, res) => {
     }
 });
 
+app.use(viewsRouter);
+app.use("/api/sessions", sessionsRouter);
+
 
 // Rutas handlebars pero de filesystem
 
@@ -110,10 +134,6 @@ app.get("/realtime", async (req, res) => {
         res.status(500).json({ error: 'Error al obtener los productos en tiempo real.' });
     }
 }); */
-
-app.get("/chat", (req, res) => {
-    res.render('chat');
-});
 
 app.get("/carts", (req, res) => {
     res.render('carts');
